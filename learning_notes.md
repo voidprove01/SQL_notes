@@ -40,3 +40,56 @@ Examples:
 - 用一个 binary flag 表示是否发生了 numerator event
 
 Conceptually:
+👉 这是 **最安全、最不容易翻车** 的写法。
+
+---
+
+## 3. Avoid aggregating numerator and denominator separately  
+（不要先算两个数再相除）
+
+一个非常常见但危险的写法是：
+
+- separately aggregate numerator
+- separately aggregate denominator
+- divide the two results
+
+❌ 风险在于：
+- filters 不一致
+- join 行为不一致
+- missingness 处理不一致
+
+✅ 更安全的逻辑顺序是：
+
+> align → flag → aggregate once
+
+---
+
+## 4. LEFT JOIN is usually the correct choice for metrics  
+（算 rate 时，LEFT JOIN 通常才是对的）
+
+在 metric 问题中：
+
+- LEFT JOIN preserves non-events
+- non-events should become 0, not disappear
+
+INNER JOIN 的常见后果是：
+> ❌ rate 被“悄悄”抬高了
+
+📌 除非你 **明确想排除 non-events**，否则 INNER JOIN 非常危险。
+
+---
+
+## 5. Make non-events explicit（0 和 1 要写清楚）
+
+Rate 本质上是在回答：
+
+> Did the event happen or not?
+
+所以我倾向于显式写：
+
+- event happened → 1
+- event did not happen → 0
+
+而不是依赖：
+```sql
+COUNT(*)
